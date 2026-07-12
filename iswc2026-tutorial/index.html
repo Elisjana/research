@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ISWC 2026 Tutorial — Semantic-Aware Partitioning of Property Graphs</title>
+  <meta name="description" content="ISWC 2026 half-day tutorial by Ymeralli, Troullinou, Dumbrava, and Kondylakis on property graph partitioning that preserves semantic constraints.">
+  <meta property="og:title" content="ISWC 2026 — Semantic-Aware Partitioning of Property Graphs">
+  <meta property="og:description" content="Tutorial on property graph constraints, balanced graph partitioning, and constraint-aware placement over public datasets.">
+  <meta property="og:type" content="article">
+  <link rel="canonical" href="/">
+  <style>
+    :root {
+      --bg: #fbfaf8;
+      --text: #1f1f24;
+      --text-muted: #4a4a52;
+      --text-light: #6b6b75;
+      --accent: #8c3a28;
+      --accent-hover: #6f2e1f;
+      --border: #e3e0da;
+      /* 12rem label + 2.5rem gap + 42rem prose + 2 × 1.1rem container padding */
+      --max-width: 58.7rem;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+    }
+    .container {
+      width: 100%;
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding: 0 1.1rem;
+    }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(251, 250, 248, 0.85);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+    }
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 1rem;
+      padding-bottom: 1rem;
+    }
+    nav { display: none; gap: 1.5rem; }
+    @media (min-width: 640px) { nav { display: flex; } }
+    nav a { color: var(--text-muted); }
+    nav a:hover { color: var(--accent); }
+    .hero {
+      padding: 4rem 0 3.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .hero-label {
+      /*color: var(--accent);*/
+      font-size: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+    .hero h1 {
+      font-size: clamp(1.25rem, 5vw, 2.35rem);
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+      font-weight: 400;
+      margin: 0;
+    }
+    .hero h1 em { font-style: italic; }
+    .hero-desc {
+      margin-top: 2rem;
+      font-size: 1.125rem;
+      line-height: 1.7;
+      color: var(--text-muted);
+      text-align: justify;
+    }
+    .hero-meta {
+      margin-top: 2.5rem;
+      padding-top: 0.5rem;
+      border-top: 1px solid var(--border);
+    }
+    .hero-meta > div {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.35rem;
+      padding: 1rem 0;
+      border-bottom: 1px solid var(--border);
+      align-items: baseline;
+    }
+    .hero-meta > div:last-child { border-bottom: none; }
+    @media (min-width: 768px) {
+      .hero-meta > div { grid-template-columns: 12rem 1fr; gap: 2.5rem; }
+    }
+    .hero-meta dt {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--text-light);
+    }
+    .hero-meta dd {
+      margin: 0;
+      font-size: 1rem;
+      line-height: 1.7;
+    }
+    .btn-preprint {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.45rem 0.9rem;
+      border: 1px solid var(--accent);
+      border-radius: 2px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+      transition: background-color 0.15s ease, color 0.15s ease;
+    }
+    .btn-preprint:hover {
+      background: var(--accent);
+      color: var(--bg);
+      text-decoration: none;
+    }
+    section {
+      padding: 4rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .section-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 2.5rem;
+    }
+    @media (min-width: 768px) { .section-grid { grid-template-columns: 12rem 1fr; } }
+    .section-label {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      color: var(--text-light);
+      padding-top: 0.5rem;
+    }
+    .prose {
+      font-size: 1.125rem;
+      line-height: 1.7;
+      color: #2a2a30;
+      max-width: 42rem;
+      text-align: justify;
+    }
+    .prose p { margin: 0 0 1.25rem; }
+    .prose p:last-child { margin-bottom: 0; }
+    .schedule-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      max-width: 42rem;
+    }
+    .schedule-item {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.5rem;
+      padding: 1.5rem 0;
+      border-top: 1px solid var(--border);
+      align-items: baseline;
+    }
+    .schedule-item:first-child { border-top: none; padding-top: 0; }
+    @media (min-width: 640px) { .schedule-item { grid-template-columns: 8rem 1fr; gap: 1rem; } }
+    .schedule-part {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.875rem;
+      color: var(--accent);
+    }
+    .schedule-title {
+      font-size: 1.25rem;
+      font-weight: 400;
+      letter-spacing: -0.01em;
+      margin: 0;
+    }
+    .schedule-leader {
+      margin: 0.25rem 0 0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-light);
+    }
+    .details-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem 2rem;
+      max-width: 42rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.875rem;
+    }
+    @media (min-width: 640px) { .details-grid { grid-template-columns: 1fr 1fr; } }
+    .details-grid .full { grid-column: 1 / -1; }
+    .details-grid dt {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--text-light);
+    }
+    .details-grid dd {
+      margin: 0.5rem 0 0;
+      line-height: 1.7;
+      text-align: justify;
+    }
+    .presenters-list {
+      max-width: 42rem;
+    }
+    .presenter {
+      padding: 1.5rem 0;
+      border-top: 1px solid var(--border);
+    }
+    .presenter:first-child { border-top: none; padding-top: 0; }
+    .presenter-header {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    @media (min-width: 640px) {
+      .presenter-header {
+        flex-direction: row;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 1rem;
+      }
+    }
+    .presenter-name {
+      font-size: 1.25rem;
+      font-weight: 400;
+      letter-spacing: -0.01em;
+      margin: 0;
+    }
+    .presenter-leads {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+    .presenter-role {
+      margin: 0.25rem 0 0;
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+    .presenter-bio {
+      margin: 0.75rem 0 0;
+      line-height: 1.7;
+      text-align: justify;
+    }
+    .presenter-url {
+      display: inline-block;
+      margin-top: 0.75rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.75rem;
+    }
+    .references-list {
+      max-width: 42rem;
+      padding-left: 1.5rem;
+      margin: 0;
+    }
+    .reference {
+      margin-bottom: 1rem;
+      line-height: 1.7;
+      text-align: justify;
+      color: #2a2a30;
+    }
+    .reference::marker {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.8rem;
+      color: var(--text-light);
+    }
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2.5rem 0;
+    }
+    .footer-inner {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-light);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container header-inner">
+      <div class="mono" style="color: var(--accent);">ISWC&nbsp;2026 | Tutorial</div>
+      <nav>
+        <a href="#abstract">Abstract</a>
+        <a href="#schedule">Schedule</a>
+        <a href="#presenters">Presenters</a>
+        <a href="#references">References</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container">
+        <div class="mono hero-label">ISWC 2026 | The 25th International Semantic Web Conference | Bari, Italy</div>
+        <h1>Semantic-Aware Partitioning of <em>Property Graphs</em></h1>
+        <p class="hero-desc">
+          A half-day tutorial on the principles and techniques for partitioning property graphs across distributed environments while preserving their semantic consistency, covering property graph constraints, balanced graph partitioning algorithms, and constraint-aware partitioning strategies.
+        </p>
+        <dl class="hero-meta">
+          <div>
+            <dt>Presenter(s)</dt>
+            <dd>Elisjana Ymeralli, Georgia Troullinou, Stefania Dumbrava, and Haridimos Kondylakis</dd>
+          </div>
+          <div>
+            <dt>Date and Time</dt>
+            <dd>25 – 29 October, 2026</dd>
+          </div>
+          <div>
+            <dt>Details</dt>
+            <dd>
+              <a class="btn-preprint" href="https://raw.githubusercontent.com/DomagojVrgoc/ISWC2024-GraphDB/main/ISWC_Tutorial.pdf" download target="_blank" rel="noreferrer">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Preprint (PDF)
+              </a>
+            </dd>
+          </div>
+        </dl>
+      </div>
+    </section>
+
+    <section id="abstract">
+      <div class="container section-grid">
+        <div class="section-label">Abstract</div>
+        <div class="prose">
+          <p>
+            Property graphs are widely used to model richly connected, attributed data. As such
+            datasets outgrow a single machine, they must be partitioned across machines for
+            storage, query processing, and reasoning. Classical partitioners optimise structural
+            objectives such as edge cut and load balance. Property graphs, however, also carry
+            semantic constraints, including keys, functional dependencies, and generating
+            dependencies. These constraints govern identity, consistency, and inference, and a
+            purely structural cut can split them across partitions.
+          </p>
+          <p>
+            This half-day tutorial studies how property graphs can be partitioned without losing
+            such semantics. It is organised in four parts: the property graph model and its
+            constraint languages; the foundations of balanced graph partitioning; constraint-aware
+            partitioning, in which constraints guide placement; and a hands-on demonstration on
+            public datasets that contrasts structural and constraint-aware placement. The
+            tutorial closes with open problems across partitioning, reasoning, and the Semantic Web.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section id="overview">
+      <div class="container section-grid">
+        <div class="section-label">Overview</div>
+        <div class="prose">
+          <p>
+            Graph partitioning splits a graph into balanced parts while minimising the edges
+            between them, which is a prerequisite for distributing a graph across machines for
+            storage, query processing, and reasoning. Structural partitioning is well studied,
+            from classical multilevel schemes such as METIS to parallel multi-constraint
+            methods. These optimise topological objectives such as edge cut and load balance,
+            treating the graph as a purely structural object.
+          </p>
+          <p>
+            Property graphs, however, can also carry semantic constraints such as key constraints,
+            graph functional dependencies, or more general graph generating dependencies. Such
+            constraints may span multiple vertices and edges, so graph partitioning can separate
+            the data they depend on. Checking or reasoning with it may require data from more
+            than one partition.
+          </p>
+          <p>
+            The tutorial explores graph partitioning from a Semantic Web perspective, emphasising
+            scalability and semantic constraints. The material is organized in four parts. The
+            first introduces property graphs and their constraint languages. The second presents
+            the foundations of graph partitioning. The third covers constraint-aware partitioning,
+            where constraints guide data placement. The fourth provides a hands-on demonstration
+            and discusses open challenges.
+          </p>
+          <p>
+            The topic is timely for the Semantic Web community. Property graphs are now backed by
+            recent ISO standards: GQL (ISO/IEC 39075:2024) and SQL/PGQ (ISO/IEC 9075-16:2023).
+            Their constraint and schema layer has also matured. PG-Keys and PG-Schema provide
+            constraint and schema languages for property graphs. Recent work also places
+            PG-Schema, SHACL, and ShEx on a common formal foundation. Partitioning property graphs
+            raises the same questions of data placement and constraint preservation that the
+            Semantic Web community already faces with RDF, SPARQL, SHACL, and ShEx.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section id="schedule">
+      <div class="container section-grid">
+        <div class="section-label" style="padding-top: 1.4rem;">Content &amp; Schedule</div>
+        <div class="max-w-2xl" style="max-width: 42rem;">
+          <p class="prose" style="margin-bottom: 2rem;">
+            The tutorial has four sections of roughly 50 minutes, each with a short discussion or
+            hands-on portion.
+          </p>
+          <ol class="schedule-list">
+            <li class="schedule-item">
+      <span class="schedule-part">Part 1</span>
+      <div>
+        <h3 class="schedule-title">Property Graphs and Their Constraints</h3>
+        <p class="schedule-leader">Led by Stefania Dumbrava</p>
+      </div>
+    </li>
+<li class="schedule-item">
+      <span class="schedule-part">Part 2</span>
+      <div>
+        <h3 class="schedule-title">Foundations of Graph Partitioning</h3>
+        <p class="schedule-leader">Led by Haridimos Kondylakis</p>
+      </div>
+    </li>
+<li class="schedule-item">
+      <span class="schedule-part">Part 3</span>
+      <div>
+        <h3 class="schedule-title">Constraint-Aware Partitioning</h3>
+        <p class="schedule-leader">Led by Elisjana Ymeralli</p>
+      </div>
+    </li>
+<li class="schedule-item">
+      <span class="schedule-part">Part 4</span>
+      <div>
+        <h3 class="schedule-title">Hands-on Demonstration and Open Challenges</h3>
+        <p class="schedule-leader">Led by Georgia Troullinou</p>
+      </div>
+    </li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <section id="details">
+      <div class="container section-grid">
+        <div class="section-label" style="padding-top: 0.8rem;">Formal Details</div>
+        <dl class="details-grid">
+          <div>
+            <dt>Format</dt>
+            <dd>Half-day</dd>
+          </div>
+          <div>
+            <dt>Level</dt>
+            <dd>Beginner to intermediate</dd>
+          </div>
+          <div class="full">
+            <dt>Prerequisite knowledge</dt>
+            <dd>
+              Basic familiarity with graphs and algorithms is assumed. Knowledge of RDF/SPARQL,
+              SHACL/ShEx, or distributed systems is helpful but not required. No programming is
+              needed to follow the demonstration.
+            </dd>
+          </div>
+          <div class="full">
+            <dt>Target audience</dt>
+            <dd>
+              Researchers, PhD students, practitioners, and developers working with property graph
+              data and distributed graph processing, with a focus on scalable data placement and
+              constraint preservation in RDF and Semantic Web settings. We estimate 30–60
+              participants.
+            </dd>
+          </div>
+        </dl>
+      </div>
+    </section>
+
+    <section id="presenters">
+      <div class="container section-grid">
+        <div class="section-label">Presenters</div>
+        <div class="presenters-list">
+          <div class="presenter">
+      <div class="presenter-header">
+        <h3 class="presenter-name">Elisjana Ymeralli</h3>
+        <span class="presenter-leads">Leads Part 3</span>
+      </div>
+      <p class="presenter-role">PhD candidate, University of Crete &amp; FORTH-ICS</p>
+      <p class="presenter-bio">Works on big data partitioning and the Semantic Web. Co-authored publications at CAiSE, RuleML+RR, and JURIX, and has contributed to tutorial activities at VLDB.</p>
+      <a class="presenter-url" href="https://users.ics.forth.gr/~ymeralli/" target="_blank" rel="noreferrer">https://users.ics.forth.gr/~ymeralli/ ↗</a>
+    </div>
+<div class="presenter">
+      <div class="presenter-header">
+        <h3 class="presenter-name">Georgia Troullinou</h3>
+        <span class="presenter-leads">Leads Part 4</span>
+      </div>
+      <p class="presenter-role">Postdoctoral researcher, ICS-FORTH</p>
+      <p class="presenter-bio">Research interests include knowledge representation, semantic schema discovery, graph summarization, and large-scale data partitioning. Co-authored work at VLDB, EDBT, ISWC, and ESWC.</p>
+      <a class="presenter-url" href="https://scholar.google.com/citations?user=DoJS1DsAAAAJ" target="_blank" rel="noreferrer">https://scholar.google.com/citations?user=DoJS1DsAAAAJ ↗</a>
+    </div>
+<div class="presenter">
+      <div class="presenter-header">
+        <h3 class="presenter-name">Stefania Dumbrava</h3>
+        <span class="presenter-leads">Leads Part 1</span>
+      </div>
+      <p class="presenter-role">Associate Professor, ENSIIE &amp; Télécom SudParis</p>
+      <p class="presenter-bio">Works on reliable graph data processing. Co-authored PG-Schema and PG-Keys, with over 40 publications at SIGMOD, VLDB, and EDBT. Co-presented the VLDB 2025 tutorial on Property Graph Standards.</p>
+      <a class="presenter-url" href="https://web4.ensiie.fr/~stefania.dumbrava/" target="_blank" rel="noreferrer">https://web4.ensiie.fr/~stefania.dumbrava/ ↗</a>
+    </div>
+<div class="presenter">
+      <div class="presenter-header">
+        <h3 class="presenter-name">Haridimos Kondylakis</h3>
+        <span class="presenter-leads">Leads Part 2</span>
+      </div>
+      <p class="presenter-role">Associate Professor, University of Crete &amp; FORTH-ICS</p>
+      <p class="presenter-bio">Over 280 publications at leading conferences and journals, including more than 50 on Knowledge Graphs. Extensive experience delivering high-profile tutorials at VLDB, EDBT, ISWC, and more.</p>
+      <a class="presenter-url" href="https://users.ics.forth.gr/~kondylak/" target="_blank" rel="noreferrer">https://users.ics.forth.gr/~kondylak/ ↗</a>
+    </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="materials">
+      <div class="container section-grid">
+        <div class="section-label">Materials</div>
+        <div class="prose">
+          <p>
+            All materials will be released before the conference under open licences, including
+            slides, reading materials, datasets, configurations, and reproduction scripts. The
+            demonstration relies on open-source components and benchmark datasets, so attendees
+            can re-run and extend it.
+          </p>
+          <p style="font-size: 1rem; color: var(--text-muted);">
+            This is the first edition of the tutorial. It builds on the presenters’ tutorial
+            experience at database and Semantic Web venues, including VLDB 2025, ISWC 2024, and
+            EDBT 2019, and extends it to the largely unexplored area of property graph
+            partitioning.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section id="references" style="border-bottom: none;">
+      <div class="container section-grid">
+        <div class="section-label">References</div>
+        <ol class="references-list">
+          <li class="reference">Ahmetaj, S., Boneva, I., Hidders, J., et al.: Common Foundations for SHACL, ShEx, and PG-Schema. In: WWW. pp. 8–21 (2025)</li>
+<li class="reference">Angles, R., Bonifati, A., Dumbrava, S., et al.: PG-Keys: Keys for Property Graphs. In: SIGMOD Conference. pp. 2423–2436 (2021)</li>
+<li class="reference">Angles, R., Bonifati, A., Dumbrava, S., et al.: PG-Schema: Schemas for Property Graphs. Proc. ACM Manag. Data 1(2), 198:1–198:25 (2023)</li>
+<li class="reference">Bhowmick, S.S., Choi, B., Li, C.: Graph querying meets HCI: state of the art and future directions. In: SIGMOD Conference. pp. 1731–1736 (2017)</li>
+<li class="reference">Erling, O., Averbuch, A., Larriba-Pey, J.L., et al.: The LDBC social network benchmark: Interactive workload. In: SIGMOD Conference. pp. 619–630 (2015)</li>
+<li class="reference">Fan, W., Wu, Y., Xu, J.: Functional dependencies for graphs. In: SIGMOD Conference. pp. 1843–1857. ACM (2016)</li>
+<li class="reference">Karypis, G., Kumar, V.: A fast and high quality multilevel scheme for partitioning irregular graphs. SIAM J. Sci. Comput. 20(1), 359–392 (1998)</li>
+<li class="reference">Kondylakis, H., Dumbrava, S., Lissandrini, M., et al.: Property Graph Standards: State of the Art &amp; Open Challenges. Proc. VLDB Endow. 18(12), 5477–5481 (2025)</li>
+<li class="reference">Kondylakis, H., Kotzinos, D., Manolescu, I.: RDF graph summarization: Principles, techniques and applications. In: EDBT. pp. 433–436 (2019), tutorial</li>
+<li class="reference">Manolescu, I., Mohanty, M.: Full-power graph querying: State of the art and challenges. Proc. VLDB Endow. 16(12), 3886–3889 (2023)</li>
+<li class="reference">Mhedhbi, A., Salihoglu, S.: Modern techniques for querying graph-structured relations: Foundations, system implementations, and open challenges. Proc. VLDB Endow. 15(12), 3762–3765 (2022)</li>
+<li class="reference">Schloegel, K., Karypis, G., Kumar, V.: Parallel multilevel algorithms for multi-constraint graph partitioning. In: Euro-Par. LNCS, vol. 1900, pp. 296–310 (2000)</li>
+<li class="reference">Shimomura, L.C., Fletcher, G., Yakovets, N.: GGDs: graph generating dependencies. In: CIKM. pp. 2217–2220 (2020)</li>
+<li class="reference">Vrgoč, D.: Recent advances in graph data management. https://domagojvrgoc.github.io/ISWC2024-GraphDB/ (2024), (Accessed: November 2024)</li>
+<li class="reference">Xiong, B., Nayyeri, M., Daza, D., Cochez, M.: Reasoning beyond triples: Recent advances in knowledge graph embeddings. In: CIKM. pp. 5228–5231 (2023)</li>
+        </ol>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container footer-inner">
+      <span>ISWC 2026 · Semantic-Aware Partitioning of Property Graphs</span>
+      <span>Presenters: Ymeralli, Troullinou, Dumbrava, Kondylakis</span>
+    </div>
+  </footer>
+</body>
+</html>
