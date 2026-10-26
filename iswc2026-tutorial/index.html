@@ -134,6 +134,12 @@
       color: var(--bg);
       text-decoration: none;
     }
+    .pdf-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem;
+      align-items: center;
+    }
     section {
       padding: 4rem 0;
       border-bottom: 1px solid var(--border);
@@ -335,10 +341,16 @@
           <div>
             <dt>Details</dt>
             <dd>
+              <div class="pdf-buttons">
               <a class="btn-preprint" href="https://elisjana.github.io/research/iswc2026-tutorial/tutorial.pdf" download target="_blank" rel="noreferrer">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 Preprint (PDF)
               </a>
+                <a class="btn-preprint" href="ISWC2026_Semantic_Tutorial.pdf" target="_blank" rel="noopener noreferrer" aria-label="View ISWC 2026 tutorial presentation slides as PDF">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+                  View Tutorial Slides (PDF)
+                </a>
+              </div>
             </dd>
           </div>
         </dl>
